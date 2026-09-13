@@ -12,7 +12,7 @@ import {IAbsenceV3} from "../src/IAbsenceV3.sol";
 ///         forked. No mocks of Hindsight exist in this repository.
 contract GateTest is Test {
     IMirror constant MIRROR = IMirror(0x2d8A4d5A34120FF9742d7a4dad37F4ff6335c118);
-    IAbsenceV3 constant ABSENCE = IAbsenceV3(0xf0a24364C72dCCfaEfbc3CD10e2a4609De9BCc17);
+    IAbsenceV3 constant ABSENCE = IAbsenceV3(0x05844C991993F3d80fAf196e10355B12BE648e40);
 
     Gate internal gate;
     uint64 internal height;
@@ -56,6 +56,17 @@ contract GateTest is Test {
         path[0].hash = bytes32(uint256(path[0].hash) ^ 1);
         vm.expectRevert();
         gate.happened(height, txBytes, path);
+    }
+
+    /// The registry's per-subject index, read from outside: an address nobody has filed about has an
+    /// empty file, and `provenSince` says nothing has been proven about it.
+    function test_anUnfiledAddressHasAnEmptyFile() public view {
+        address aave = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
+        bytes32 liquidationCall = 0xe413a321e8681d831f4dbccbca790d2952b56f977908e45be37335533e005286;
+        bytes32 empty = ABSENCE.keyOf(3, aave, liquidationCall, 3, bytes32(uint256(uint160(address(this)))));
+        (uint32 open, uint32 refuted, uint64 ev, uint64 mem, uint32 total) = ABSENCE.recordOf(empty);
+        assertEq(uint256(open) + refuted + ev + mem + total, 0);
+        assertFalse(gate.provenSince(aave, liquidationCall, 3, address(this), 0));
     }
 
     function test_wouldRelyReadsTheLiveRegistry() public {

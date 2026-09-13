@@ -31,4 +31,16 @@ contract Gate {
     function wouldRely(uint256 claimId, uint256 exposure) external view returns (bool) {
         return ABSENCE.isUsable(claimId, exposure);
     }
+
+    /// @notice Has anyone proven, against a held root, that `subject` emitted this event at `venue`
+    ///         at or above `sinceHeight`? One read of the registry's index, however big the board is.
+    function provenSince(address venue, bytes32 topic0, uint8 slot, address subject, uint64 sinceHeight)
+        external
+        view
+        returns (bool)
+    {
+        bytes32 key = ABSENCE.keyOf(ETHEREUM, venue, topic0, slot, bytes32(uint256(uint160(subject))));
+        (, uint32 refuted, uint64 lastEvidenceAt, uint64 lastMemberAt,) = ABSENCE.recordOf(key);
+        return (refuted != 0 && lastEvidenceAt >= sinceHeight) || (lastMemberAt != 0 && lastMemberAt >= sinceHeight);
+    }
 }
